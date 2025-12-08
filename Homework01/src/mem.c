@@ -3,8 +3,8 @@
  *
  * Implementation of the memory area with several types.
  *
- * @author <Your name>
- * @date   <Date last modified>
+ * @author Evan Hu
+ * @date   12-8-2025
  */
 #include <stdio.h>
 #include <stdlib.h>
