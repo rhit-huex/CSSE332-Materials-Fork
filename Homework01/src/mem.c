@@ -13,7 +13,7 @@
 #include "mem.h"
 
 // The length of the header we are using.
-#define HLEN 2 * sizeof(int)
+#define HLEN (2 * sizeof(int))
 
 /**
  * Implementation of getmem()
@@ -21,8 +21,11 @@
 void *
 getmem(int nc, int ni)
 {
-  // TODO: Add your code here...
-  return 0;
+  int total_bytes = HLEN + (nc * 1) + (ni * 4);
+  char* base_ptr = malloc(total_bytes);
+  *((int*)base_ptr) = ni;
+  *((int*)(base_ptr + sizeof(int)*1)) = nc;
+  return base_ptr + HLEN;
 }
 
 /**
@@ -31,7 +34,8 @@ getmem(int nc, int ni)
 void
 freemem(void *mem)
 {
-  // TODO: Add your code here...
+  char* base_ptr = mem - HLEN;
+  free(base_ptr);
 }
 
 /**
@@ -40,8 +44,8 @@ freemem(void *mem)
 int
 getnc(void *mem)
 {
-  // TODO: Add your code here...
-  return -1;
+  char* base_ptr = (char*)mem - HLEN;
+  return *(int*)(base_ptr + sizeof(int)*1);
 }
 
 /**
@@ -50,8 +54,8 @@ getnc(void *mem)
 int
 getni(void *mem)
 {
-  // TODO: Add your code here...
-  return -1;
+  char* base_ptr = (char*)mem - HLEN;
+  return *(int*)base_ptr;
 }
 
 /**
@@ -60,8 +64,8 @@ getni(void *mem)
 char *
 getstr(void *mem)
 {
-  // TODO: Add your code here...
-  return 0;
+  int ni = getni(mem);
+  return (char*)mem + sizeof(int)*ni;
 }
 
 /**
@@ -70,8 +74,7 @@ getstr(void *mem)
 int *
 getintptr(void *mem)
 {
-  // TODO: Add your code here...
-  return 0;
+  return (int*)mem;
 }
 
 /**
@@ -80,8 +83,11 @@ getintptr(void *mem)
 int
 getint_at(void *mem, int idx, int *res)
 {
-  // TODO: Add your code here...
-  return -1;
+  int ni = getni(mem);
+  if(idx >= ni) { return -1; }
+  int* int_arr = getintptr(mem);
+  *res = int_arr[idx];
+  return 0;
 }
 
 /**
@@ -90,8 +96,11 @@ getint_at(void *mem, int idx, int *res)
 int
 setint_at(void *mem, int idx, int val)
 {
-  // TODO: Add your code here...
-  return -1;
+  int ni = getni(mem);
+  if(idx >= ni) { return -1; }
+  int* int_arr = getintptr(mem);
+  int_arr[idx] = val;
+  return 0;
 }
 
 /**
@@ -100,6 +109,16 @@ setint_at(void *mem, int idx, int val)
 size_t
 cpstr(void *mem, const char *str, size_t len)
 {
-  // TODO: Add your code here...
+  char* str_start = getstr(mem);
+  int nc = getnc(mem);
+  if(len > nc) {
+    memcpy(str_start, str, nc-1);
+    str_start[nc - 1] = '\0';
+    return nc;
+  } else {
+    memcpy(str_start, str, len);
+    str_start[len] = '\0';
+    return len+1; //add 1 for the null terminator
+  }
   return 0;
 }
