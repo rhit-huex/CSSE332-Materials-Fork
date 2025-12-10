@@ -28,7 +28,7 @@ vec_new()
 
   vec->len  = 0;
   vec->cap  = VEC_DEF_CAP;
-  vec->data = calloc(vec->cap, sizeof(unsigned int));
+  vec->data = calloc(vec->cap, sizeof(unsigned int)); // calloc initializes all spaces to 0
   if(!vec->data) {
     perror("vec:data:calloc");
     free(vec);
@@ -44,9 +44,14 @@ vec_new()
 void
 vec_free(struct vector *vec)
 {
-  // TODO: Add your code here...
+  free(vec->data);
+  free(vec);
+  return;
 }
 
+/**
+ * __vec_realloc: doubles the cap in our vector then reallocates that space
+ */
 static unsigned int *
 __vec_realloc(struct vector *vec)
 {
@@ -66,7 +71,14 @@ __vec_realloc(struct vector *vec)
 void
 vec_push_back(struct vector *vec, unsigned int elem)
 {
-  // TODO: Add your code here...
+  //if(!vec) { return (unsigned int)-1; }
+  if(vec->len >= vec->cap) {
+    __vec_realloc(vec);
+  }
+  // *(vec->data + sizeof(int)*vec->len) = elem;
+  vec->data[vec->len] = elem;
+  vec->len = vec->len + 1;
+  return;
 }
 
 /**
@@ -79,8 +91,8 @@ vec_pop_back(struct vector *vec)
     return (unsigned int)-1; // doesn't matter what we return.
   }
 
-  // TODO: Add your code here....
-  return 0;
+  vec->len = vec->len - 1; // dcr len, now we are at last elem
+  return vec->data[vec->len];
 }
 
 /**
@@ -89,12 +101,10 @@ vec_pop_back(struct vector *vec)
 unsigned int
 vec_elem_at(struct vector *vec, unsigned int i)
 {
-  if(!vec || i >= vec->len) {
-    return (unsigned int)-1; // doesn't matter what we return.
-  }
+  if(!vec) { errno = EFAULT; return (unsigned int)-1; } // doesn't matter what we return.
+  if(i >= vec->len) { errno = ERANGE; return (unsigned int)-1; }
 
-  // TODO: Add your code here...
-  return 0;
+  return *(vec->data + i);
 }
 
 /**
@@ -103,10 +113,9 @@ vec_elem_at(struct vector *vec, unsigned int i)
 int
 vec_set_at(struct vector *vec, unsigned int i, unsigned int elem)
 {
-  if(!vec || i >= vec->len) {
-    return -1;
-  }
+  if(!vec) { errno = EFAULT; return (unsigned int)-1; }
+  if(i >= vec->len) { errno = ERANGE; return (unsigned int)-1; }
 
-  // TODO: Add your code here...
+  *(vec->data + i) = elem;
   return 0;
 }
