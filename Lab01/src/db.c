@@ -27,19 +27,27 @@ node_mk_node(struct oo_node *node)
 void
 node_rm_node(struct oo_node *node)
 {
-  // TODO: Add your code here...
+  // we need to set node->prev->next to be node->next
+  //        and set node->next->prev to be node->prev, this removes the node from the middle
+  // need a tmp pointer to store the pointer for node->next
+  node->next->prev = node->prev;
+  node->prev->next = node->next;
+  //node->next = NULL;
+  //node->prev = NULL; // reset the inner pointers NVM THE TEST CASES DONT WANT THAT
+  node->next = node;
+  node->prev = node;
 }
 
 // This is a helper function, feel free to keep it here or remove it if you do
 // not have a need for it.
-static void
-_node_add(struct oo_node *left, struct oo_node *node)
-{
-  left->next->prev = node;
-  node->next       = left->next;
-  node->prev       = left;
-  left->next       = node;
-}
+//static void
+//_node_add(struct oo_node *left, struct oo_node *node)
+//{
+//  left->next->prev = node;
+//  node->next       = left->next;
+//  node->prev       = left;
+//  left->next       = node;
+//}
 
 /**
  * Implementation of node_add_tail
@@ -47,7 +55,14 @@ _node_add(struct oo_node *left, struct oo_node *node)
 void
 node_add_tail(struct oo_node *head, struct oo_node *node)
 {
-  // TODO: Add your code here..
+  // insert at head->prev since its a circular list
+
+  node->prev = head->prev; // set tail to point at originial tail
+  head->prev->next = node; // set originial tail to point to new tail
+  node->next = head; // set tail to point back to head
+
+  head->prev = node;
+  if (head->next == head) { head->next = node; } // if one element list then the head->next must change
 }
 
 /**
@@ -56,7 +71,17 @@ node_add_tail(struct oo_node *head, struct oo_node *node)
 void
 node_add_head(struct oo_node *head, struct oo_node *node)
 {
-  // TODO: Add your code here..
+  // we essentially want to make a new head
+  //actually instructions say insert at the head
+  struct oo_node* tmp = head->next;
+
+  node->next = tmp; // set node's next to be rest of the list
+  node->prev = head; // node's prev will always become head
+  head->next = node; // head's next will always become node
+
+  tmp->prev = node;
+  // now we may have to change where head prev points (if it pointed to itself)
+  if (head->prev == head) { head->prev = node; }
 }
 
 /**
@@ -81,9 +106,13 @@ node_to_dbulong(struct oo_node *node)
  * Implementation of db_add_record
  */
 void
-db_add_record(struct db *db, struct oo_node *node)
+db_add_record(struct db* db, struct oo_node* node)
 {
-  // TODO: Add your code here...
+  // add node at head NVM i think it wanted me to add it at tail
+  // node_add_head(&db->head, node);
+  node_add_tail(&db->head, node);
+  // increase db->rcount by 1
+  db->rcount = db->rcount + 1;
 }
 
 /**
@@ -118,12 +147,14 @@ join_str_db(struct db *db)
   char *r = 0, *p = 0;
   size_t len = 0;
 
+  int count = 0;
   for(n = db->head.next; n != &db->head; n = n->next) {
     s = node_to_dbstr(n);
     len += strlen(s->str);
+    count++;
   }
 
-  r = malloc(len + 1);
+  r = malloc(len + count + 1); // allocate space for the total size of all strings plus 1 for the null terminator
   p = r;
   for(n = db->head.next; n != &db->head; n = n->next) {
     s = node_to_dbstr(n);
