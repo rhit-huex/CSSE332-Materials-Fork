@@ -173,6 +173,19 @@ join_str_db(struct db *db)
 int
 searching_seek_and_destroy(struct db *db, unsigned long value)
 {
-  // TODO: Add your code here....
-  return -1;
+  struct oo_node* n;
+  int removed = 0;
+
+  struct oo_node* tmp_n;
+  for(n = db->head.next; n != &db->head; n = tmp_n) {
+    // save n->next before we remove n so we can go to next correctly
+    tmp_n = n->next;
+    struct db_ulong* d = node_to_dbulong(n);
+    if(d->value == value) {
+      node_rm_node(n);
+      removed++;
+      db->rcount--;
+    }
+  }
+  return removed;
 }
