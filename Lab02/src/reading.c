@@ -14,6 +14,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "reading.h"
 
@@ -42,8 +43,17 @@ get_file_size(int fd)
 ssize_t
 read_bytes(int fd, char *buf, ssize_t len, size_t incr)
 {
-  // TODO: Complete this with your instructor
-  return 0;
+  ssize_t total = 0;
+  size_t cur_incr = incr; // must initialize this to incr
+  while(total<len) {
+    if(len-total < (ssize_t)incr) { cur_incr = len-total; } // If the remaining bytes is less than incr
+
+    ssize_t num_read = read(fd, &buf[total], cur_incr);
+    if(num_read == -1) { return -1; }
+    if(num_read == 0) { break; } // end of file
+    total += num_read;
+  }
+  return total;
 }
 
 static double
@@ -69,7 +79,7 @@ _main(int argc, char **argv)
   int rc = EXIT_SUCCESS;
   char *endptr;
   ssize_t fsize;
-  ssize_t blk              = 1;
+  ssize_t blk              = 524288;
   struct timespec ts_start = {0, 0}, ts_end = {0, 0};
 
   // TODO: Please comment out this line when you implement the last step in
@@ -103,7 +113,13 @@ _main(int argc, char **argv)
   // TODO:
   // =====
   //  Add code here to read all of the bytes of the input file fd.
-
+  clock_gettime(CLOCK_MONOTONIC, &ts_start);
+  ssize_t len = fsize; // set length to size of the file (in bytes)
+  char* buffer = malloc(len);
+  ssize_t bytes = read_bytes(fd, buffer, len, blk);
+  fprintf(stderr, "read_bytes read %d bytes\n", (int)bytes);
+  clock_gettime(CLOCK_MONOTONIC, &ts_end);
+  fprintf(stderr, "%lf seconds time elapsed\n", _subtract_timspec(ts_end, ts_start));
   // HINT:
   // =====
   // To measure time and print it, use the following:
@@ -123,7 +139,7 @@ _main(int argc, char **argv)
   // clock_gettime(CLOCK_MONOTONIC, &ts_end);
   // fprintf(stderr, "%lf seconds time elapsed\n",
   //         _subtract_timspec(ts_end, ts_start));
-
+  free(buffer);
   close(fd);
   return rc;
 }
