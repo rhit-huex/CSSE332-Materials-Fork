@@ -28,6 +28,7 @@ main(int argc, char *argv[])
   }
   max = atoi(argv[1]);
 
+<<<<<<< HEAD
   #define MAX_THREADS 5
 
   // pthread_t p1, p2;
@@ -49,5 +50,15 @@ main(int argc, char *argv[])
   }
 
   printf("main: done\n [counter: %d]\n [should: %d]\n", counter, max * MAX_THREADS);
+=======
+  pthread_t p1, p2;
+  printf("main: begin [counter = %d]\n", counter);
+  pthread_create(&p1, NULL, mythread, "A");
+  pthread_create(&p2, NULL, mythread, "B");
+  // join waits for the threads to finish
+  pthread_join(p1, NULL);
+  pthread_join(p2, NULL);
+  printf("main: done\n [counter: %d]\n [should: %d]\n", counter, max * 2);
+>>>>>>> f7602cb49ecc33c8a055a30bc535416bf08ff744
   return 0;
 }
