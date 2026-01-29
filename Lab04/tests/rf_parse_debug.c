@@ -76,7 +76,7 @@ main(int argc, char **argv)
          "the corresponding source code\n");
 
   // Load the parser
-  if(rf_parse_state_init(&st, "3.rf")) {
+  if(rf_parse_state_init(&st, "1.rf")) {
     fprintf(stderr, "[ERROR]: %s\n", rf_strerror(st.error));
     exit(EXIT_FAILURE);
   }
