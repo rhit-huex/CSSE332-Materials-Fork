@@ -29,24 +29,37 @@ main(int argc, char *argv[])
     exit(1);
   }
   max = atoi(argv[1]);
-  pthread_t threads[MAX_THREADS];
-  const char* ids[MAX_THREADS] = {"A", "B", "C", "D", "E"};
-  for(int i=0; (i<MAX_THREADS); i++) {
-    pthread_create(&threads[i], NULL, mythread, ids[i]);
-    //pthread_join(threads[i], NULL);
-  }
-  for(int i=0; (i<MAX_THREADS); i++) {
-    pthread_join(threads[i], NULL);
+
+<<<<<<< HEAD
+  #define MAX_THREADS 5
+
+  // pthread_t p1, p2;
+  pthread_t ids[MAX_THREADS];
+  char* names[MAX_THREADS] = {"bird", "Jerry", "Chris", "Chthulu", "Terry"};
+  printf("main: begin [counter = %d]\n", counter);
+
+  // pthread_create(&p1, NULL, mythread, "A");
+  // pthread_create(&p2, NULL, mythread, "B");
+  for (int i = 0; i < MAX_THREADS; ++i){
+    pthread_create(&ids[i], NULL, mythread, names[i]);
   }
 
+  for (int i = 0; i < MAX_THREADS; ++i){
+    // join waits for the threads to finish
+    // pthread_join(p1, NULL);
+    // pthread_join(p2, NULL);
+    pthread_join(ids[i], NULL);        
+  }
 
-  //pthread_t p1, p2;
-  //printf("main: begin [counter = %d]\n", counter);
-  //pthread_create(&p1, NULL, mythread, "A");
-  //pthread_create(&p2, NULL, mythread, "B");
-  // join waits for the threads to finish
-  //pthread_join(p1, NULL);
-  //pthread_join(p2, NULL);
   printf("main: done\n [counter: %d]\n [should: %d]\n", counter, max * MAX_THREADS);
+=======
+  pthread_t p1, p2;
+  printf("main: begin [counter = %d]\n", counter);
+  pthread_create(&p1, NULL, mythread, "A");
+  pthread_create(&p2, NULL, mythread, "B");
+  // join waits for the threads to finish
+  pthread_join(p1, NULL);
+  pthread_join(p2, NULL);
+  printf("main: done\n [counter: %d]\n [should: %d]\n", counter, max * 2);
   return 0;
 }
