@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MAX_THREADS 5
+
 int max;
 volatile int counter = 0; // shared global variable
 
@@ -27,14 +29,24 @@ main(int argc, char *argv[])
     exit(1);
   }
   max = atoi(argv[1]);
+  pthread_t threads[MAX_THREADS];
+  const char* ids[MAX_THREADS] = {"A", "B", "C", "D", "E"};
+  for(int i=0; (i<MAX_THREADS); i++) {
+    pthread_create(&threads[i], NULL, mythread, ids[i]);
+    //pthread_join(threads[i], NULL);
+  }
+  for(int i=0; (i<MAX_THREADS); i++) {
+    pthread_join(threads[i], NULL);
+  }
 
-  pthread_t p1, p2;
-  printf("main: begin [counter = %d]\n", counter);
-  pthread_create(&p1, NULL, mythread, "A");
-  pthread_create(&p2, NULL, mythread, "B");
+
+  //pthread_t p1, p2;
+  //printf("main: begin [counter = %d]\n", counter);
+  //pthread_create(&p1, NULL, mythread, "A");
+  //pthread_create(&p2, NULL, mythread, "B");
   // join waits for the threads to finish
-  pthread_join(p1, NULL);
-  pthread_join(p2, NULL);
-  printf("main: done\n [counter: %d]\n [should: %d]\n", counter, max * 2);
+  //pthread_join(p1, NULL);
+  //pthread_join(p2, NULL);
+  printf("main: done\n [counter: %d]\n [should: %d]\n", counter, max * MAX_THREADS);
   return 0;
 }
