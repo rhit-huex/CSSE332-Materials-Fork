@@ -21,6 +21,8 @@
 // and the null terminateor.
 #define MAX_ARGS 16
 
+char cmd_name[256]; // global for command name, if we run multiple background jobs maybe use an array
+
 char *
 get_prompt_line(void)
 {
@@ -85,7 +87,17 @@ generate_exec_args(char *cmd, char *argv[])
   // TODO:
   // =====
   //  Implement this function...
-  return 0;
+  char* token = strtok(cmd, " "); // Split on spaces
+  int i = 0;
+  while(token != NULL) {
+    //fprintf(stdout, "test: %s\n", token);
+    argv[i] = token;
+    //fprintf(stdout, "test argvi: %s\n", argv[i]);
+    token = strtok(NULL, " ");
+    i++;
+  }
+  argv[i] = NULL;
+  return i;
 }
 
 int
@@ -94,7 +106,33 @@ start_fg_command(char *cmd)
   // TODO:
   // =====
   //   Implement code to start a foreground command.
+  // 1. Get the array of arguments. The first arg is the command the rest are the args
+  char* argv[MAX_ARGS];
+  generate_exec_args(cmd, argv);
+
+  //fprintf(stdout, "Running foreground command %s with %d arguments", argv[0], num_args);
+  int rc = fork();
+  if(rc == 0) { // child
+    //fprintf(stdout, "Running foreground command %s with %d arguments", argv[0], num_args);
+    execvp(argv[0], argv);
+    perror("execvp failed");
+    exit(1);
+  } else { // parent
+    //fprintf(stdout, "Running foreground command %s with %d arguments", argv[0], num_args);
+    int wstatus;
+    waitpid(rc, &wstatus, 0);
+
+    if(WIFEXITED(wstatus)) {
+      return WEXITSTATUS(wstatus);
+    }
+  }
   return -1;
+}
+
+void sigchld_handler(int sig) {
+  int wstatus;
+  wait(&wstatus);
+  fprintf(stdout, "Background command %s finished!\n", cmd_name);
 }
 
 void
@@ -103,4 +141,22 @@ start_bg_command(char *cmd)
   // TODO:
   // =====
   //   Implement code to start a background command.
+  char* argv[MAX_ARGS];
+  strncpy(cmd_name, cmd, sizeof(cmd_name));
+  generate_exec_args(cmd, argv);
+  //
+  setsighandler(SIGCHLD, sigchld_handler);
+  int rc = fork();
+  if(rc == 0) { // child
+    execvp(argv[0], argv);
+    perror("execvp failed");
+    exit(1);
+  } else { // parent
+    //int wstatus;
+    //waitpid(rc, &wstatus, 0);
+
+    //if(WIFEXITED(wstatus)) {
+    //  return WEXITSTATUS(wstatus);
+    //}
+  }
 }
