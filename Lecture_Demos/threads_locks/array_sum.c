@@ -30,6 +30,22 @@ void *
 run_fn(void *arg)
 {
   // TODO: Add your thread code here...
+  // Sum from 0->array_size/2 if we pass a 0, else if a 1, sum from array_size/2->array_size
+  // This is slow bc there is now branch prediction involved (maybe idk the hardware too well)
+  int start = *(int* )arg;
+  for(int i = 0; i<array_size/2; i++) {
+    sum = sum + array[i + start];
+  }
+
+  //if(*(int*)arg == 0) {
+  //  for(int i = 0; i<(array_size/2); i++) {
+  //    sum = sum + array[i];
+  //  }
+  //} else {
+  //  for(int i = (array_size/2); i<array_size; i++) {
+  //    sum = sum + array[i];
+  //  }
+  //}
   return NULL;
 }
 
@@ -71,13 +87,13 @@ main(int argc, char **argv)
   //
 
   pthread_t t1, t2;
-
+  int half1 = 0; int half2 = 1;
   gettimeofday(&start, NULL);
   // TODO:
   // =====
   //  Feel free to change the arguments here as you see fit.
-  pthread_create(&t1, NULL, run_fn, NULL);
-  pthread_create(&t2, NULL, run_fn, NULL);
+  pthread_create(&t1, NULL, run_fn, &half1);
+  pthread_create(&t2, NULL, run_fn, &half2);
 
   pthread_join(t1, NULL);
   pthread_join(t2, NULL);
