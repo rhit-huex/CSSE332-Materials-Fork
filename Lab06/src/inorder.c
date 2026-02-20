@@ -8,6 +8,14 @@
 #include <stdio.h>
 #include <unistd.h>
 
+// State of the world
+int next_to_exit = 1; // 1 gets to go first
+
+// Conditional Variables
+pthread_cond_t thread_exited = PTHREAD_COND_INITIALIZER;
+
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 void *
 thread(void *arg)
 {
@@ -17,6 +25,17 @@ thread(void *arg)
   // simulate the critical section with a simple sleep.
   sleep(1);
 
+  // Grab lock
+  pthread_mutex_lock(&lock);
+  while(*num != next_to_exit) {
+    pthread_cond_wait(&thread_exited, &lock);
+  }
+  pthread_mutex_unlock(&lock);
+
+  pthread_mutex_lock(&lock);
+  next_to_exit += 1;
+  pthread_cond_broadcast(&thread_exited);
+  pthread_mutex_unlock(&lock);
   printf("%d is finished with the critical section\n", *num);
 
   return NULL;

@@ -19,7 +19,20 @@
 #define MAX_N_SIZE 100
 
 /* other global variable instantiations can go here */
+void summary_stats_helper(char* name, long times[], int count) {
+  long min = times[0];
+  long max = times[0];
+  long sum = 0;
 
+  for(int i=0; i<count; i++) {
+    if(times[i] < min) { min = times[i]; }
+    if(times[i] > max) { max = times[i]; }
+    sum += times[i];
+  }
+  double avg = (double)sum / count;
+
+  fprintf(stdout, "%s avg %f min %ld, max %ld\n", name, avg, min, max);
+}
 /* Uses a brute force method of sorting the input list. */
 void
 BruteForceSort(int inputList[], int inputLength)
@@ -96,18 +109,50 @@ MergeSort(int array[], int inputLength)
 }
 
 // you might want some globals, put them here
+typedef struct {
+  int* vals;
+  int length;
+  int thread_num;
+} thread_args_t;
 
 // here's a global I used you might find useful
 char *descriptions[] = {"brute force", "bubble", "merge"};
 
 // I wrote a function called thread dispatch which parses the thread
-// parameters and calls the correct sorting function
+// parameters and calls the correct sorting function. This will be the function
+// that is called when we are creating our thread.
 //
 // you can do it a different way but I think this is easiest
 void *
-thread_dispatch(void *data)
+thread_dispatch(void* arg)
 {
-  return 0;
+  struct timeval startt, stopt;
+  suseconds_t usecs_passed;
+
+  thread_args_t* t_args = (thread_args_t*)arg; // must cast from void ptr to struct ptr
+  int sort_alg = t_args->thread_num % 3;
+  int start = t_args->thread_num * t_args->length;
+  int end = start + t_args->length;
+
+  gettimeofday(&startt, NULL);
+
+  if(sort_alg == 0) { // send it to brute force
+    fprintf(stdout, "Sorting indexes %d-%d with brute force\n", start, end);
+    BruteForceSort(t_args->vals, t_args->length);
+  } else if(sort_alg == 1) { // send it to bubble
+    fprintf(stdout, "Sorting indexes %d-%d with bubble\n", start, end);
+    BubbleSort(t_args->vals, t_args->length);
+  } else if(sort_alg == 2) { // send it to merge
+    fprintf(stdout, "Sorting indexes %d-%d with merge\n", start, end);
+    MergeSort(t_args->vals, t_args->length);
+  }
+
+  gettimeofday(&stopt, NULL);
+  usecs_passed = stopt.tv_usec - startt.tv_usec;
+
+  long* elapsed = malloc(sizeof(long));
+  *elapsed = usecs_passed;
+  return (void*)elapsed;
 }
 
 int
@@ -153,11 +198,49 @@ main(int argc, char **argv)
   }
 
   // create your threads here
+  pthread_t threads[n];
+
+  // Keep the thread arguments in their own memory locations (because using struct pointers)
+  thread_args_t t_args[n];
+  for(int i=0; i<n; i++) {
+    // We want to grab for each thread [i, i*vals_per_thread]
+    // We can just choose where to start and we know the end because we have length
+    t_args[i].vals = &data_array[i*vals_per_thread];
+    t_args[i].length = vals_per_thread;
+    t_args[i].thread_num = i;
+
+    pthread_create(&threads[i], NULL, thread_dispatch, &t_args[i]);
+  }
+
+  // Store summary statistics
+  long brute_times[n/3]; long bubble_times[n/3]; long merge_times[n/3];
+
+  int brute_index = 0; int bubble_index = 0; int merge_index = 0;
 
   // wait for them to finish
+  for(int i=0; i<n; i++) {
+    void* result;
+    pthread_join(threads[i], &result);
 
+    long elapsed_time = *(long*)result;
+    int start = i*vals_per_thread;
+    int end = start+vals_per_thread;
+    fprintf(stdout, "Sorting indexes %d-%d with %s took %ld usecs\n", start, end, descriptions[i%3], elapsed_time);
+
+    // Add to times array to be able to calculate summary statistics in the end
+    int sort_alg = i%3;
+    if(sort_alg == 0) { // send to brute
+      brute_times[brute_index++] = elapsed_time;
+    } else if(sort_alg == 1) { // send to bubble
+      bubble_times[bubble_index++] = elapsed_time;
+    } else if(sort_alg == 2) { // send to merge
+      merge_times[merge_index++] = elapsed_time;
+    }
+  }
   // print out the algorithm summary statistics
-
+  summary_stats_helper("brute force", brute_times, brute_index);
+  summary_stats_helper("bubble", bubble_times, bubble_index);
+  summary_stats_helper("merge", merge_times, merge_index);
   // print out the result array so you can see the sorting is working
   // you might want to comment this out if you're testing with large data sets
   printf("Result array:\n");

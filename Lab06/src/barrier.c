@@ -21,10 +21,33 @@
 
 #define NUM_THREADS 5
 
+
+// State of the world
+int threads_at_barrier = 0;
+// Assume the threads total is always 5 for this problem
+
+// Conditional variables
+pthread_cond_t barrier_cond = PTHREAD_COND_INITIALIZER;
+
+// Intialize the mutex
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 void
 barrier_wait(void)
 {
   // TODO: Add your code here.
+  // 1. Grab the mutex
+  // 2. Update the global state
+  // 3. pthread cond wait on the cond var
+  pthread_mutex_lock(&lock);
+  threads_at_barrier += 1;
+  while(threads_at_barrier < NUM_THREADS) {
+    pthread_cond_wait(&barrier_cond, &lock);
+  }
+  pthread_mutex_unlock(&lock);
+  pthread_mutex_lock(&lock);
+  pthread_cond_broadcast(&barrier_cond);
+  pthread_mutex_unlock(&lock);
 }
 
 void *

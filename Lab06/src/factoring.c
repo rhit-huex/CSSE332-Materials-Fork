@@ -20,13 +20,37 @@
 //
 // Your threads should each just print the factors they find, they don't
 // need to communicate the factors to the original thread.
+int numThreads = 0;
+unsigned long long int target = 0;
 
-int
-main(void)
-{
-  unsigned long long int target, i;
-  int numThreads;
+void* factor(void* threadId) { // target and numThreads are global and we dont change them
+  // Break down target/2 into sections by dividing by numThreads
+  // then start is the threadID*section and end is threadID*section + section
+  int start = ((target/2) / numThreads) * (*(int*)threadId);
+  int end = start + ((target/2) / numThreads);
+  //fprintf(stdout, "Thread: %d\nStart: %d\nEnd: %d\n", *(int*)threadId, start, end);
+  //fprintf(stdout, "Thread: %d\n", *(int*)threadId);
+  for(int i = start; i < end; i = i + 1) {
+    // You'll want to keep this testing line in.  Otherwise it goes so fast it
+    // can be hard to detect your code is running in parallel. Also test with a
+    // large number (i.e. > 3000)
+    printf("testing %d\n", i);
+    if(i == 0) {
+      printf("0 is not a factor\n");
+    }
+    if(i!=0 && target % i == 0) {
+      printf("%d is a factor\n", i);
+    }
+  }
+  if(target/2 == end) {
+    if(target % end == 0) {
+      printf("%d is a factor\n", end);
+    }
+  }
+  return NULL;
+}
 
+int main(void) {
   printf("Give a number to factor.\n");
   scanf("%llu", &target);
 
@@ -36,15 +60,21 @@ main(void)
     printf("Bad number of threads!\n");
     return 0;
   }
+  pthread_t ids[numThreads];
+  int threadIds[numThreads];
+  for(int j = 0; j<numThreads; j++) {
+    threadIds[j] = j;
+  }
+  for(int j = 0; j<numThreads; j++) {
+    // make new threads from [0,numThreads)
+    // put the loop in a function and then j will be used to calculate the start
+    // and end of the loop for the thread
+    // t0: 2
+    pthread_create(&ids[j], NULL, factor, &threadIds[j]);
+  }
 
-  for(i = 2; i <= target / 2; i = i + 1) {
-    // You'll want to keep this testing line in.  Otherwise it goes so fast it
-    // can be hard to detect your code is running in parallel. Also test with a
-    // large number (i.e. > 3000)
-    printf("testing %llu\n", i);
-    if(target % i == 0) {
-      printf("%llu is a factor\n", i);
-    }
+  for(int j = 0; j<numThreads; j++) {
+    pthread_join(ids[j], NULL);
   }
   return 0;
 }

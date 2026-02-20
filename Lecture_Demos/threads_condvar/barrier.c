@@ -14,11 +14,25 @@
  */
 
 #define NUM_THREADS 5
+// State of the world
+// In this case, the number of threads that hit the barrier
+int num_threads_arrived = 0;
 
+// Condition variables - one per wait condition
+// In this case, all threads to arrive
+pthread_cond_t all_threads_arrived = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 void barrier_wait(void)
 {
   // TODO: Add your code here.
+  pthread_mutex_lock(&lock);
+  num_threads_arrived++;
+  while(!(num_threads_arrived == NUM_THREADS)) {
+    pthread_cond_wait(&all_threads_arrived, &lock);
+  }
+  pthread_cond_broadcast(&all_threads_arrived); // must signal all threads bc waiting on same sig
+  pthread_mutex_unlock(&lock);
 }
 
 void *thread_fn(void *arg)
