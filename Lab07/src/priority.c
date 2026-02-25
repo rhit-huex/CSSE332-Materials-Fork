@@ -24,14 +24,45 @@
  * Solve this problem with mutexes/condition variables
  */
 
+/*
+  This seems like the same problem as inorder.c from lab06. So ill just do that
+  but now choose to run the higher number threads first
+*/
+// State of the world
+int cur_priority = 6; // priority systems usually use a set range so this can be set on initing
+int count[6] = {0, 0, 0, 0, 0, 0};
+// Conditional Variables
+pthread_cond_t thread_exited = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 void *
 thread(void *arg)
 {
   int *num = (int *)arg;
   printf("%d wants to enter the critical section\n", *num);
 
+  pthread_mutex_lock(&lock);
+  count[*num] += 1; // number of threads in that priority
+  while(*num < cur_priority) {
+    pthread_cond_wait(&thread_exited, &lock);
+  }
+  pthread_mutex_unlock(&lock);
   printf("%d has entered the critical section\n", *num);
   sleep(1);
+  pthread_mutex_lock(&lock);
+
+  count[*num] -= 1; // number of threads in that prio decreases
+
+  // get the next priority
+  if(count[*num] == 0) { // if we are done w/ all threads in the current prio
+    cur_priority = *num - 1;
+    while(cur_priority > 0 && count[cur_priority] == 0) { // until we are at prio 0 or the next prio
+      cur_priority--;
+    }
+    pthread_cond_broadcast(&thread_exited);
+  }
+
+  pthread_mutex_unlock(&lock);
   printf("%d is finished with the critical section\n", *num);
 
   return NULL;

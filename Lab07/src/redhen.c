@@ -36,7 +36,17 @@
  * sequence
  */
 
-int numLoaves;
+// State of the world
+int numLoaves = 0;
+// int curNumBatches = 0; We dont need to track this
+int numInKitchen = 0;
+
+// Condition Variables
+pthread_cond_t bread_ready = PTHREAD_COND_INITIALIZER;
+pthread_cond_t bread_empty = PTHREAD_COND_INITIALIZER;
+pthread_cond_t exited_kitchen = PTHREAD_COND_INITIALIZER;
+
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 void *
 littleRedHenThread(void *arg)
@@ -47,7 +57,13 @@ littleRedHenThread(void *arg)
   for(batch = 1; batch <= 6; batch++) {
     sleep(2); // just makes it obvious that it won't work without
               // condition variables
+    pthread_mutex_lock(&lock);
+    while(numLoaves > 0) { // while the bread is empty
+      pthread_cond_wait(&bread_empty, &lock);
+    } // once the loaves run out then make more
     numLoaves += 7;
+    pthread_cond_signal(&bread_ready);
+    pthread_mutex_unlock(&lock);
     printf("%-20s: A fresh batch of bread is ready.\n", name);
   }
 
@@ -63,15 +79,41 @@ otherAnimalThread(void *arg)
   char *name         = (char *)arg;
   int numLoavesEaten = 0;
   while(numLoavesEaten < NUM_LOAVES_TO_EAT) {
+    // enter the kitchen before waiting for bread
+    pthread_mutex_lock(&lock);
+    while(numInKitchen != 0) {
+      pthread_cond_wait(&exited_kitchen, &lock);
+    }
+
+    //pthread_mutex_lock(&lock);
+    numInKitchen = 1;
+
     if(numLoaves <= 0) {
       printf("%-20s: Hey, Little Red Hen, make some more bread!\n", name);
+      // Signal the hen to make bread, wait on the bread
+      pthread_cond_signal(&bread_empty);
     }
+
+    // We still have the lock bc the last wait gave it back to us
+    while(numLoaves <= 0) {
+      pthread_cond_wait(&bread_ready, &lock);
+    } // once we get some loaves continue
     numLoaves--;
+
+    pthread_mutex_unlock(&lock);
     printf("%-20s: Mmm, this loaf is delicious.\n", name);
-    numLoavesEaten++;
+
+    numLoavesEaten++; // local variable we dont need to lock it
+
     if(random() > random()) { // Adds variety to output
       sleep(1);
     }
+
+    pthread_mutex_lock(&lock);
+    // leave the kitchen, I guess we gotta go back and forth for bread
+    numInKitchen = 0;
+    pthread_cond_signal(&exited_kitchen);
+    pthread_mutex_unlock(&lock);
   }
   printf("%-20s: I've had my fill of bread. Thanks, Little Red Hen!\n", name);
   return NULL;
